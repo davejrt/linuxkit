@@ -33,6 +33,7 @@ func runAzure(args []string) {
 	resourceGroupName := flags.String("resourceGroupName", "", "Name of resource group to be used for VM")
 	location := flags.String("location", "westus", "Location of the VM")
 	accountName := flags.String("accountName", defaultStorageAccountName, "Name of the storage account")
+	virtualNetworkName := flags.String("virtualNetworkName", "", "Name of the network to create")
 
 	subscriptionID := getEnvVarOrExit("AZURE_SUBSCRIPTION_ID")
 	tenantID := getEnvVarOrExit("AZURE_TENANT_ID")
@@ -53,7 +54,6 @@ func runAzure(args []string) {
 	imagePath := remArgs[0]
 
 	rand.Seed(time.Now().UTC().UnixNano())
-	virtualNetworkName := fmt.Sprintf("linuxkitvirtualnetwork%d", rand.Intn(1000))
 	subnetName := fmt.Sprintf("linuxkitsubnet%d", rand.Intn(1000))
 	publicIPAddressName := fmt.Sprintf("publicip%d", rand.Intn(1000))
 	networkInterfaceName := fmt.Sprintf("networkinterface%d", rand.Intn(1000))
@@ -64,16 +64,16 @@ func runAzure(args []string) {
 	group := createResourceGroup(*resourceGroupName, *location)
 	createStorageAccount(*accountName, *location, *group)
 	uploadVMImage(*group.Name, *accountName, imagePath)
-	createVirtualNetwork(*group, virtualNetworkName, *location)
-	subnet := createSubnet(*group, virtualNetworkName, subnetName)
+	createVirtualNetwork(*group, *virtualNetworkName, *location)
+	subnet := createSubnet(*group, *virtualNetworkName, subnetName)
 	publicIPAddress := createPublicIPAddress(*group, publicIPAddressName, *location)
 	networkInterface := createNetworkInterface(*group, networkInterfaceName, *publicIPAddress, *subnet, *location)
-	go createVirtualMachine(*group, *accountName, virtualMachineName, *networkInterface, *publicIPAddress, *location)
+	createVirtualMachine(*group, *accountName, virtualMachineName, *networkInterface, *publicIPAddress, *location)
 
-	fmt.Printf("\nStarted deployment of virtual machine %s in resource group %s", virtualMachineName, *group.Name)
+	// fmt.Printf("\nStarted deployment of virtual machine %s in resource group %s", virtualMachineName, *group.Name)
 
-	time.Sleep(time.Second * 5)
+	// time.Sleep(time.Second * 5)
 
-	fmt.Printf("\nNOTE: Since you created a minimal VM without the Azure Linux Agent, the portal will notify you that the deployment failed. After around 50 seconds try connecting to the VM")
-	fmt.Printf("\nssh -i path-to-key root@%s\n", *publicIPAddress.DNSSettings.Fqdn)
+	// fmt.Printf("\nNOTE: Since you created a minimal VM without the Azure Linux Agent, the portal will notify you that the deployment failed. After around 50 seconds try connecting to the VM")
+	// fmt.Printf("\nssh -i path-to-key root@%s\n", *publicIPAddress.DNSSettings.Fqdn)
 }
